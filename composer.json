@@ -1,0 +1,27 @@
+{
+  "name": "triniti/people",
+  "description": "Php library that provides implementations for triniti:people schemas.",
+  "type": "library",
+  "license": "Apache-2.0",
+  "require": {
+    "php": ">=7.1",
+    "gdbots/ncr": "~0.2"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^6.4",
+    "triniti/acme-schemas": "~0.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Triniti\\People\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Triniti\\Tests\\People\\": "tests"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit"
+  }
+}
