@@ -3,70 +3,22 @@ declare(strict_types=1);
 
 namespace Triniti\People;
 
-use Gdbots\Ncr\NcrSearch;
-use Gdbots\Pbjx\RequestHandler;
-use Gdbots\Pbjx\RequestHandlerTrait;
-use Gdbots\QueryParser\Enum\BoolOperator;
-use Gdbots\QueryParser\Node\Field;
-use Gdbots\QueryParser\Node\Word;
-use Gdbots\QueryParser\ParsedQuery;
-use Gdbots\Schemas\Ncr\Enum\NodeStatus;
-use Triniti\Schemas\People\Mixin\Person\PersonV1Mixin;
-use Triniti\Schemas\People\Mixin\SearchPeopleRequest\SearchPeopleRequest;
+use Gdbots\Ncr\AbstractSearchNodesRequestHandler;
+use Gdbots\Pbjx\Pbjx;
+use Gdbots\Schemas\Ncr\Mixin\SearchNodesRequest\SearchNodesRequest;
+use Gdbots\Schemas\Ncr\Mixin\SearchNodesResponse\SearchNodesResponse;
 use Triniti\Schemas\People\Mixin\SearchPeopleRequest\SearchPeopleRequestV1Mixin;
-use Triniti\Schemas\People\Mixin\SearchPeopleResponse\SearchPeopleResponse;
 use Triniti\Schemas\People\Mixin\SearchPeopleResponse\SearchPeopleResponseV1Mixin;
 
-final class SearchPeopleRequestHandler implements RequestHandler
+class SearchPeopleRequestHandler extends AbstractSearchNodesRequestHandler
 {
-    use RequestHandlerTrait;
-
-    /** @var NcrSearch */
-    private $ncrSearch;
-
     /**
-     * @param NcrSearch $ncrSearch
+     * {@inheritdoc}
      */
-    public function __construct(NcrSearch $ncrSearch)
+    protected function createSearchNodesResponse(SearchNodesRequest $request, Pbjx $pbjx): SearchNodesResponse
     {
-        $this->ncrSearch = $ncrSearch;
-    }
-
-    /**
-     * @param SearchPeopleRequest $request
-     *
-     * @return SearchPeopleResponse
-     */
-    protected function handle(SearchPeopleRequest $request): SearchPeopleResponse
-    {
-        /** @var SearchPeopleResponse $response */
+        /** @var SearchNodesResponse $response */
         $response = SearchPeopleResponseV1Mixin::findOne()->createMessage();
-
-        $parsedQuery = ParsedQuery::fromArray(json_decode(
-            $request->get('parsed_query_json', '{}'),
-            true
-        ));
-
-        $prohibited = BoolOperator::PROHIBITED();
-
-        // if status is not specified in some way, default to not
-        // showing any deleted nodes.
-        if (!$request->has('status')
-            && !$request->has('statuses')
-            && !$request->isInSet('fields_used', 'status')
-        ) {
-            $parsedQuery->addNode(
-                new Field('status', new Word(NodeStatus::DELETED, $prohibited), $prohibited)
-            );
-        }
-
-        $this->ncrSearch->searchNodes(
-            $request,
-            $parsedQuery,
-            $response,
-            [PersonV1Mixin::findOne()->getQName()]
-        );
-
         return $response;
     }
 

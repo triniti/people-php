@@ -3,62 +3,49 @@ declare(strict_types=1);
 
 namespace Triniti\People;
 
-use Gdbots\Pbjx\CommandHandler;
-use Gdbots\Pbjx\CommandHandlerTrait;
+use Gdbots\Ncr\AbstractUpdateNodeHandler;
 use Gdbots\Pbjx\Pbjx;
 use Gdbots\Schemas\Ncr\Enum\NodeStatus;
-use Gdbots\Schemas\Pbjx\StreamId;
+use Gdbots\Schemas\Ncr\Mixin\Node\Node;
+use Gdbots\Schemas\Ncr\Mixin\NodeUpdated\NodeUpdated;
+use Gdbots\Schemas\Ncr\Mixin\UpdateNode\UpdateNode;
 use Triniti\Schemas\People\Mixin\Person\Person;
 use Triniti\Schemas\People\Mixin\PersonUpdated\PersonUpdatedV1Mixin;
-use Triniti\Schemas\People\Mixin\UpdatePerson\UpdatePerson;
 use Triniti\Schemas\People\Mixin\UpdatePerson\UpdatePersonV1Mixin;
 
-final class UpdatePersonHandler implements CommandHandler
+class UpdatePersonHandler extends AbstractUpdateNodeHandler
 {
-    use CommandHandlerTrait;
+    /**
+     * {@inheritdoc}
+     */
+    protected function isNodeSupported(Node $node): bool
+    {
+        return $node instanceof Person;
+    }
 
     /**
-     * @param UpdatePerson $command
-     * @param Pbjx         $pbjx
+     * {@inheritdoc}
      */
-    protected function handle(UpdatePerson $command, Pbjx $pbjx): void
+    protected function createNodeUpdated(UpdateNode $command, Pbjx $pbjx): NodeUpdated
     {
+        /** @var NodeUpdated $event */
         $event = PersonUpdatedV1Mixin::findOne()->createMessage();
-        $pbjx->copyContext($command, $event);
+        return $event;
+    }
 
-        /** @var Person $newNode */
-        $newNode = clone $command->get('new_node');
-        $newNode
-            ->set('updated_at', $event->get('occurred_at'))
-            ->set('updater_ref', $event->get('ctx_user_ref'))
-            ->set('last_event_ref', $event->generateMessageRef());
+    /**
+     * {@inheritdoc}
+     */
+    protected function beforePutEvents(NodeUpdated $event, UpdateNode $command, Pbjx $pbjx): void
+    {
+        parent::beforePutEvents($event, $command, $pbjx);
 
-        if ($command->has('old_node')) {
-            $oldNode = $command->get('old_node');
-            $event->set('old_node', $oldNode);
-
-            $newNode
-                // status SHOULD NOT change during an update, use the appropriate
-                // command to change a status (delete, publish, etc.)
-                ->set('status', $oldNode->get('status'))
-                // created_at and creator_ref MUST NOT change
-                ->set('created_at', $oldNode->get('created_at'))
-                ->set('creator_ref', $oldNode->get('creator_ref'))
-                // slug SHOULD NOT change during an update, use "rename-person"
-                ->set('slug', $oldNode->get('slug'));
-        }
+        $newNode = $event->get('new_node');
 
         // people are only published or deleted, enforce it.
         if (!NodeStatus::DELETED()->equals($newNode->get('status'))) {
             $newNode->set('status', NodeStatus::PUBLISHED());
         }
-
-        $event
-            ->set('node_ref', $command->get('node_ref'))
-            ->set('new_node', $newNode);
-
-        $streamId = StreamId::fromString(sprintf('person.history:%s', $newNode->get('_id')));
-        $pbjx->getEventStore()->putEvents($streamId, [$event]);
     }
 
     /**

@@ -3,42 +3,44 @@ declare(strict_types=1);
 
 namespace Triniti\People;
 
-use Gdbots\Pbjx\CommandHandler;
-use Gdbots\Pbjx\CommandHandlerTrait;
+use Gdbots\Ncr\AbstractCreateNodeHandler;
 use Gdbots\Pbjx\Pbjx;
 use Gdbots\Schemas\Ncr\Enum\NodeStatus;
-use Gdbots\Schemas\Pbjx\StreamId;
-use Triniti\Schemas\People\Mixin\CreatePerson\CreatePerson;
+use Gdbots\Schemas\Ncr\Mixin\CreateNode\CreateNode;
+use Gdbots\Schemas\Ncr\Mixin\Node\Node;
+use Gdbots\Schemas\Ncr\Mixin\NodeCreated\NodeCreated;
 use Triniti\Schemas\People\Mixin\CreatePerson\CreatePersonV1Mixin;
 use Triniti\Schemas\People\Mixin\Person\Person;
 use Triniti\Schemas\People\Mixin\PersonCreated\PersonCreatedV1Mixin;
 
-final class CreatePersonHandler implements CommandHandler
+class CreatePersonHandler extends AbstractCreateNodeHandler
 {
-    use CommandHandlerTrait;
+    /**
+     * {@inheritdoc}
+     */
+    protected function isNodeSupported(Node $node): bool
+    {
+        return $node instanceof Person;
+    }
 
     /**
-     * @param CreatePerson $command
-     * @param Pbjx         $pbjx
+     * {@inheritdoc}
      */
-    protected function handle(CreatePerson $command, Pbjx $pbjx): void
+    protected function createNodeCreated(CreateNode $command, Pbjx $pbjx): NodeCreated
     {
+        /** @var NodeCreated $event */
         $event = PersonCreatedV1Mixin::findOne()->createMessage();
-        $pbjx->copyContext($command, $event);
+        return $event;
+    }
 
-        /** @var Person $node */
-        $node = clone $command->get('node');
-        $node
-            ->clear('updated_at')
-            ->clear('updater_ref')
-            ->set('status', NodeStatus::PUBLISHED())
-            ->set('created_at', $event->get('occurred_at'))
-            ->set('creator_ref', $event->get('ctx_user_ref'))
-            ->set('last_event_ref', $event->generateMessageRef());
-
-        $event->set('node', $node);
-        $streamId = StreamId::fromString(sprintf('person.history:%s', $node->get('_id')));
-        $pbjx->getEventStore()->putEvents($streamId, [$event]);
+    /**
+     * {@inheritdoc}
+     */
+    protected function beforePutEvents(NodeCreated $event, CreateNode $command, Pbjx $pbjx): void
+    {
+        parent::beforePutEvents($event, $command, $pbjx);
+        $node = $event->get('node');
+        $node->set('status', NodeStatus::PUBLISHED());
     }
 
     /**

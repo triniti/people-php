@@ -36,7 +36,7 @@ final class NcrPersonProjectorTest extends AbstractPbjxTest
         $event = PersonCreatedV1::create()->set('node', $person);
 
         $this->ncrSearch->expects($this->once())->method('indexNodes');
-        $this->projector->onPersonCreated($event);
+        $this->projector->onPersonCreated($event, $this->pbjx);
         $actualPerson = $this->ncr->getNode($nodeRef);
 
         $this->assertTrue($person->equals($actualPerson));
@@ -50,7 +50,7 @@ final class NcrPersonProjectorTest extends AbstractPbjxTest
         $event->isReplay(true);
 
         $this->ncrSearch->expects($this->never())->method('indexNodes');
-        $this->projector->onPersonCreated($event);
+        $this->projector->onPersonCreated($event, $this->pbjx);
         $actualPerson = $this->ncr->getNode($nodeRef);
 
         $this->assertTrue($person->equals($actualPerson));
@@ -75,7 +75,7 @@ final class NcrPersonProjectorTest extends AbstractPbjxTest
             ->set('node_ref', $nodeRef);
 
         $this->ncrSearch->expects($this->once())->method('indexNodes');
-        $this->projector->onPersonUpdated($event);
+        $this->projector->onPersonUpdated($event, $this->pbjx);
         $actualPerson = $this->ncr->getNode($nodeRef);
 
         $this->assertTrue($newPerson->equals($actualPerson));
@@ -102,7 +102,7 @@ final class NcrPersonProjectorTest extends AbstractPbjxTest
         $event->isReplay(true);
 
         $this->ncrSearch->expects($this->never())->method('indexNodes');
-        $this->projector->onPersonUpdated($event);
+        $this->projector->onPersonUpdated($event, $this->pbjx);
         $actualPerson = $this->ncr->getNode($nodeRef);
 
         $this->assertTrue($actualPerson->equals($oldPerson));
@@ -116,7 +116,7 @@ final class NcrPersonProjectorTest extends AbstractPbjxTest
 
         $event = PersonDeletedV1::create()->set('node_ref', $nodeRef);
 
-        $this->projector->onPersonDeleted($event);
+        $this->projector->onPersonDeleted($event, $this->pbjx);
         $deletedPerson = $this->ncr->getNode($nodeRef);
         $this->assertEquals(NodeStatus::DELETED(), $deletedPerson->get('status'));
     }
@@ -131,7 +131,7 @@ final class NcrPersonProjectorTest extends AbstractPbjxTest
             ->set('node_ref', $nodeRef)
             ->set('new_slug', 'new-person-name');
 
-        $this->projector->onPersonRenamed($event);
+        $this->projector->onPersonRenamed($event, $this->pbjx);
         $renamedPerson = $this->ncr->getNode($nodeRef);
         $this->assertEquals('new-person-name', $renamedPerson->get('slug'));
     }
@@ -144,6 +144,6 @@ final class NcrPersonProjectorTest extends AbstractPbjxTest
         $event = PersonDeletedV1::create()
             ->set('node_ref', NodeRef::fromString('acme:person:7afcc2f1-9654-46d1-8fc1-b0511df257db'));
 
-        $this->projector->onPersonDeleted($event);
+        $this->projector->onPersonDeleted($event, $this->pbjx);
     }
 }

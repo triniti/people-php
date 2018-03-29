@@ -3,57 +3,33 @@ declare(strict_types=1);
 
 namespace Triniti\People;
 
-use Gdbots\Ncr\Ncr;
-use Gdbots\Pbjx\CommandHandler;
-use Gdbots\Pbjx\CommandHandlerTrait;
+use Gdbots\Ncr\AbstractDeleteNodeHandler;
 use Gdbots\Pbjx\Pbjx;
-use Gdbots\Schemas\Ncr\NodeRef;
-use Gdbots\Schemas\Pbjx\StreamId;
-use Triniti\People\Exception\InvalidArgumentException;
-use Triniti\Schemas\People\Mixin\DeletePerson\DeletePerson;
+use Gdbots\Schemas\Ncr\Mixin\DeleteNode\DeleteNode;
+use Gdbots\Schemas\Ncr\Mixin\Node\Node;
+use Gdbots\Schemas\Ncr\Mixin\NodeDeleted\NodeDeleted;
 use Triniti\Schemas\People\Mixin\DeletePerson\DeletePersonV1Mixin;
 use Triniti\Schemas\People\Mixin\Person\Person;
 use Triniti\Schemas\People\Mixin\PersonDeleted\PersonDeletedV1Mixin;
 
-final class DeletePersonHandler implements CommandHandler
+class DeletePersonHandler extends AbstractDeleteNodeHandler
 {
-    use CommandHandlerTrait;
-
-    /** @var Ncr */
-    private $ncr;
-
     /**
-     * @param Ncr $ncr
+     * {@inheritdoc}
      */
-    public function __construct(Ncr $ncr)
+    protected function isNodeSupported(Node $node): bool
     {
-        $this->ncr = $ncr;
+        return $node instanceof Person;
     }
 
     /**
-     * @param DeletePerson $command
-     * @param Pbjx         $pbjx
+     * {@inheritdoc}
      */
-    protected function handle(DeletePerson $command, Pbjx $pbjx): void
+    protected function createNodeDeleted(DeleteNode $command, Pbjx $pbjx): NodeDeleted
     {
-        /** @var NodeRef $nodeRef */
-        $nodeRef = $command->get('node_ref');
-        $node = $this->ncr->getNode($nodeRef, true);
-
-        if (!$node instanceof Person) {
-            throw new InvalidArgumentException("Expected a person, got {$node::schema()->getCurie()}.");
-        }
-
+        /** @var NodeDeleted $event */
         $event = PersonDeletedV1Mixin::findOne()->createMessage();
-        $pbjx->copyContext($command, $event);
-        $event->set('node_ref', $nodeRef);
-
-        if ($node->has('slug')) {
-            $event->set('slug', $node->get('slug'));
-        }
-
-        $streamId = StreamId::fromString(sprintf('person.history:%s', $nodeRef->getId()));
-        $pbjx->getEventStore()->putEvents($streamId, [$event]);
+        return $event;
     }
 
     /**

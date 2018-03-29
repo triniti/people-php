@@ -15,7 +15,8 @@ final class RenamePersonHandlerTest extends AbstractPbjxTest
 {
     public function testHandleCommand(): void
     {
-        $node = PersonV1::create();
+        $node = PersonV1::create()->set('slug', 'original-slug-name');
+        $this->ncr->putNode($node);
         $nodeRef = NodeRef::fromNode($node);
 
         $expectedId = $nodeRef->getId();
@@ -23,9 +24,9 @@ final class RenamePersonHandlerTest extends AbstractPbjxTest
         $command = RenamePersonV1::create();
         $command->set('node_ref', $nodeRef);
         $command->set('new_slug', 'updated-slug-name');
-        $command->set('old_slug', 'original-slug-name');
+        $command->set('old_slug', $node->get('slug'));
 
-        $handler = new RenamePersonHandler();
+        $handler = new RenamePersonHandler($this->ncr);
         $handler->handleCommand($command, $this->pbjx);
 
         $this->eventStore->pipeAllEvents(function (Event $event, StreamId $streamId) use ($expectedId) {
@@ -38,15 +39,16 @@ final class RenamePersonHandlerTest extends AbstractPbjxTest
 
     public function testSlugNotChanged(): void
     {
-        $node = PersonV1::create();
+        $node = PersonV1::create()->set('slug', 'original-slug-name');
+        $this->ncr->putNode($node);
         $nodeRef = NodeRef::fromNode($node);
 
         $command = RenamePersonV1::create();
         $command->set('node_ref', $nodeRef);
         $command->set('new_slug', 'original-slug-name');
-        $command->set('old_slug', 'original-slug-name');
+        $command->set('old_slug', $node->get('slug'));
 
-        $handler = new RenamePersonHandler();
+        $handler = new RenamePersonHandler($this->ncr);
         $handler->handleCommand($command, $this->pbjx);
 
         $callbackIsCalled = false;

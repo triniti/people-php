@@ -3,48 +3,33 @@ declare(strict_types=1);
 
 namespace Triniti\People;
 
-use Gdbots\Pbjx\CommandHandler;
-use Gdbots\Pbjx\CommandHandlerTrait;
+use Gdbots\Ncr\AbstractRenameNodeHandler;
 use Gdbots\Pbjx\Pbjx;
-use Gdbots\Schemas\Ncr\NodeRef;
-use Gdbots\Schemas\Pbjx\StreamId;
-use Triniti\People\Exception\InvalidArgumentException;
-use Triniti\Schemas\People\Mixin\Person\PersonV1Mixin;
+use Gdbots\Schemas\Ncr\Mixin\Node\Node;
+use Gdbots\Schemas\Ncr\Mixin\NodeRenamed\NodeRenamed;
+use Gdbots\Schemas\Ncr\Mixin\RenameNode\RenameNode;
+use Triniti\Schemas\People\Mixin\Person\Person;
 use Triniti\Schemas\People\Mixin\PersonRenamed\PersonRenamedV1Mixin;
-use Triniti\Schemas\People\Mixin\RenamePerson\RenamePerson;
 use Triniti\Schemas\People\Mixin\RenamePerson\RenamePersonV1Mixin;
 
-final class RenamePersonHandler implements CommandHandler
+class RenamePersonHandler extends AbstractRenameNodeHandler
 {
-    use CommandHandlerTrait;
+    /**
+     * {@inheritdoc}
+     */
+    protected function isNodeSupported(Node $node): bool
+    {
+        return $node instanceof Person;
+    }
 
     /**
-     * @param RenamePerson $command
-     * @param Pbjx         $pbjx
+     * {@inheritdoc}
      */
-    protected function handle(RenamePerson $command, Pbjx $pbjx): void
+    protected function createNodeRenamed(RenameNode $command, Pbjx $pbjx): NodeRenamed
     {
-        if ($command->get('new_slug') === $command->get('old_slug')) {
-            return;
-        }
-
-        /** @var NodeRef $nodeRef */
-        $nodeRef = $command->get('node_ref');
-
-        if ($nodeRef->getQName() !== PersonV1Mixin::findOne()->getQName()) {
-            throw new InvalidArgumentException("Expected a person, got {$nodeRef}.");
-        }
-
+        /** @var NodeRenamed $event */
         $event = PersonRenamedV1Mixin::findOne()->createMessage();
-        $pbjx->copyContext($command, $event);
-
-        $event->set('new_slug', $command->get('new_slug'))
-            ->set('old_slug', $command->get('old_slug'))
-            ->set('node_status', $command->get('node_status'))
-            ->set('node_ref', $nodeRef);
-
-        $streamId = StreamId::fromString(sprintf('person.history:%s', $nodeRef->getId()));
-        $pbjx->getEventStore()->putEvents($streamId, [$event]);
+        return $event;
     }
 
     /**
