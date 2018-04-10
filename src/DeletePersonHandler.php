@@ -4,41 +4,21 @@ declare(strict_types=1);
 namespace Triniti\People;
 
 use Gdbots\Ncr\AbstractDeleteNodeHandler;
-use Gdbots\Pbjx\Pbjx;
-use Gdbots\Schemas\Ncr\Mixin\DeleteNode\DeleteNode;
-use Gdbots\Schemas\Ncr\Mixin\Node\Node;
-use Gdbots\Schemas\Ncr\Mixin\NodeDeleted\NodeDeleted;
-use Triniti\Schemas\People\Mixin\DeletePerson\DeletePersonV1Mixin;
-use Triniti\Schemas\People\Mixin\Person\Person;
-use Triniti\Schemas\People\Mixin\PersonDeleted\PersonDeletedV1Mixin;
+use Gdbots\Pbj\SchemaCurie;
+use Triniti\Schemas\People\Mixin\Person\PersonV1Mixin;
 
 class DeletePersonHandler extends AbstractDeleteNodeHandler
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function isNodeSupported(Node $node): bool
-    {
-        return $node instanceof Person;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function createNodeDeleted(DeleteNode $command, Pbjx $pbjx): NodeDeleted
-    {
-        /** @var NodeDeleted $event */
-        $event = PersonDeletedV1Mixin::findOne()->createMessage();
-        return $event;
-    }
+    use PbjxHelperTrait;
 
     /**
      * {@inheritdoc}
      */
     public static function handlesCuries(): array
     {
+        $curie = PersonV1Mixin::findOne()->getCurie();
         return [
-            DeletePersonV1Mixin::findOne()->getCurie(),
+            SchemaCurie::fromString("{$curie->getVendor()}:{$curie->getPackage()}:command:delete-person"),
         ];
     }
 }

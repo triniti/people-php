@@ -5,11 +5,11 @@ namespace Triniti\Tests\People;
 
 use Acme\Schemas\People\Command\DeletePersonV1;
 use Acme\Schemas\People\Node\PersonV1;
+use Gdbots\Schemas\Ncr\Mixin\NodeDeleted\NodeDeleted;
 use Gdbots\Schemas\Ncr\NodeRef;
 use Gdbots\Schemas\Pbjx\Mixin\Event\Event;
 use Gdbots\Schemas\Pbjx\StreamId;
 use Triniti\People\DeletePersonHandler;
-use Triniti\Schemas\People\Mixin\PersonDeleted\PersonDeleted;
 
 final class DeletePersonHandlerTest extends AbstractPbjxTest
 {
@@ -28,7 +28,7 @@ final class DeletePersonHandlerTest extends AbstractPbjxTest
         $handler->handleCommand($command, $this->pbjx);
 
         $this->eventStore->pipeAllEvents(function (Event $event, StreamId $streamId) use ($expectedId) {
-            $this->assertInstanceOf(PersonDeleted::class, $event);
+            $this->assertInstanceOf(NodeDeleted::class, $event);
             $this->assertSame(StreamId::fromString("person.history:{$expectedId}")->toString(), $streamId->toString());
             $this->assertSame('original-slug-name', $event->get('slug'));
         });

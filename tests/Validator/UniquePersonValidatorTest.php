@@ -10,11 +10,11 @@ use Acme\Schemas\People\Event\PersonCreatedV1;
 use Acme\Schemas\People\Event\PersonUpdatedV1;
 use Acme\Schemas\People\Node\PersonV1;
 use Acme\Schemas\People\Request\GetPersonRequestV1;
+use Gdbots\Ncr\Validator\UniqueNodeValidator;
 use Gdbots\Pbjx\Event\PbjxEvent;
 use Gdbots\Schemas\Ncr\NodeRef;
 use Gdbots\Schemas\Pbjx\StreamId;
 use Triniti\People\GetPersonRequestHandler;
-use Triniti\People\Validator\UniquePersonValidator;
 use Triniti\Tests\People\AbstractPbjxTest;
 
 final class UniquePersonValidatorTest extends AbstractPbjxTest
@@ -37,16 +37,16 @@ final class UniquePersonValidatorTest extends AbstractPbjxTest
         $node = PersonV1::create();
         $command->set('node', $node);
 
-        $validator = new UniquePersonValidator();
+        $validator = new UniqueNodeValidator();
         $pbjxEvent = new PbjxEvent($command);
-        $validator->validateCreatePerson($pbjxEvent);
+        $validator->validateCreateNode($pbjxEvent);
 
         // if it gets here it's a pass
         $this->assertTrue(true);
     }
 
     /**
-     * @expectedException \Triniti\People\Exception\PersonAlreadyExists
+     * @expectedException \Gdbots\Ncr\Exception\NodeAlreadyExists
      */
     public function testValidateCreatePersonThatDoesExistBySlug(): void
     {
@@ -56,13 +56,13 @@ final class UniquePersonValidatorTest extends AbstractPbjxTest
         $this->ncr->putNode($existingNode);
         $command->set('node', $newNode);
 
-        $validator = new UniquePersonValidator();
+        $validator = new UniqueNodeValidator();
         $pbjxEvent = new PbjxEvent($command);
-        $validator->validateCreatePerson($pbjxEvent);
+        $validator->validateCreateNode($pbjxEvent);
     }
 
     /**
-     * @expectedException \Triniti\People\Exception\PersonAlreadyExists
+     * @expectedException \Gdbots\Ncr\Exception\NodeAlreadyExists
      */
     public function testValidateCreatePersonThatDoesExistById(): void
     {
@@ -73,9 +73,9 @@ final class UniquePersonValidatorTest extends AbstractPbjxTest
         $event->set('node', $node);
         $this->eventStore->putEvents(StreamId::fromString("person.history:{$node->get('_id')}"), [$event]);
 
-        $validator = new UniquePersonValidator();
+        $validator = new UniqueNodeValidator();
         $pbjxEvent = new PbjxEvent($command);
-        $validator->validateCreatePerson($pbjxEvent);
+        $validator->validateCreateNode($pbjxEvent);
     }
 
     /**
@@ -89,9 +89,9 @@ final class UniquePersonValidatorTest extends AbstractPbjxTest
         $event->set('node', $node);
         $this->eventStore->putEvents(StreamId::fromString("person.history:{$node->get('_id')}"), [$event]);
 
-        $validator = new UniquePersonValidator();
+        $validator = new UniqueNodeValidator();
         $pbjxEvent = new PbjxEvent($command);
-        $validator->validateUpdatePerson($pbjxEvent);
+        $validator->validateUpdateNode($pbjxEvent);
     }
 
     public function testValidateUpdatePersonSlugIsCopied(): void
@@ -103,8 +103,8 @@ final class UniquePersonValidatorTest extends AbstractPbjxTest
             ->set('new_node', $newPage);
         $pbjxEvent = new PbjxEvent($command);
 
-        $validator = new UniquePersonValidator();
-        $validator->validateUpdatePerson($pbjxEvent);
+        $validator = new UniqueNodeValidator();
+        $validator->validateUpdateNode($pbjxEvent);
         $this->assertSame('first-person', $command->get('new_node')->get('slug'));
     }
 
@@ -116,8 +116,8 @@ final class UniquePersonValidatorTest extends AbstractPbjxTest
             ->set('new_slug', 'new-slug-for-person');
 
         $pbjxEvent = new PbjxEvent($command);
-        $validator = new UniquePersonValidator();
-        $validator->validateRenamePerson($pbjxEvent);
+        $validator = new UniqueNodeValidator();
+        $validator->validateRenameNode($pbjxEvent);
 
         // if it gets here then it's a pass
         $this->assertTrue(true);
@@ -130,8 +130,8 @@ final class UniquePersonValidatorTest extends AbstractPbjxTest
     {
         $command = RenamePersonV1::create();
         $pbjxEvent = new PbjxEvent($command);
-        $validator = new UniquePersonValidator();
-        $validator->validateRenamePerson($pbjxEvent);
+        $validator = new UniqueNodeValidator();
+        $validator->validateRenameNode($pbjxEvent);
     }
 
     /**
@@ -144,7 +144,7 @@ final class UniquePersonValidatorTest extends AbstractPbjxTest
             ->set('node_ref', NodeRef::fromNode($person));
 
         $pbjxEvent = new PbjxEvent($command);
-        $validator = new UniquePersonValidator();
-        $validator->validateRenamePerson($pbjxEvent);
+        $validator = new UniqueNodeValidator();
+        $validator->validateRenameNode($pbjxEvent);
     }
 }

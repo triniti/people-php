@@ -4,34 +4,17 @@ declare(strict_types=1);
 namespace Triniti\People;
 
 use Gdbots\Ncr\AbstractUpdateNodeHandler;
+use Gdbots\Pbj\SchemaCurie;
 use Gdbots\Pbjx\Pbjx;
 use Gdbots\Schemas\Ncr\Enum\NodeStatus;
-use Gdbots\Schemas\Ncr\Mixin\Node\Node;
 use Gdbots\Schemas\Ncr\Mixin\NodeUpdated\NodeUpdated;
 use Gdbots\Schemas\Ncr\Mixin\UpdateNode\UpdateNode;
 use Triniti\Schemas\People\Mixin\Person\Person;
-use Triniti\Schemas\People\Mixin\PersonUpdated\PersonUpdatedV1Mixin;
-use Triniti\Schemas\People\Mixin\UpdatePerson\UpdatePersonV1Mixin;
+use Triniti\Schemas\People\Mixin\Person\PersonV1Mixin;
 
 class UpdatePersonHandler extends AbstractUpdateNodeHandler
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function isNodeSupported(Node $node): bool
-    {
-        return $node instanceof Person;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function createNodeUpdated(UpdateNode $command, Pbjx $pbjx): NodeUpdated
-    {
-        /** @var NodeUpdated $event */
-        $event = PersonUpdatedV1Mixin::findOne()->createMessage();
-        return $event;
-    }
+    use PbjxHelperTrait;
 
     /**
      * {@inheritdoc}
@@ -40,6 +23,7 @@ class UpdatePersonHandler extends AbstractUpdateNodeHandler
     {
         parent::beforePutEvents($event, $command, $pbjx);
 
+        /** @var Person $newNode */
         $newNode = $event->get('new_node');
 
         // people are only published or deleted, enforce it.
@@ -53,8 +37,9 @@ class UpdatePersonHandler extends AbstractUpdateNodeHandler
      */
     public static function handlesCuries(): array
     {
+        $curie = PersonV1Mixin::findOne()->getCurie();
         return [
-            UpdatePersonV1Mixin::findOne()->getCurie(),
+            SchemaCurie::fromString("{$curie->getVendor()}:{$curie->getPackage()}:command:update-person"),
         ];
     }
 }

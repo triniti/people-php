@@ -5,6 +5,7 @@ namespace Triniti\Tests\People;
 
 use Acme\Schemas\People\Command\RenamePersonV1;
 use Acme\Schemas\People\Node\PersonV1;
+use Gdbots\Schemas\Ncr\Mixin\NodeRenamed\NodeRenamed;
 use Gdbots\Schemas\Ncr\NodeRef;
 use Gdbots\Schemas\Pbjx\Mixin\Event\Event;
 use Gdbots\Schemas\Pbjx\StreamId;
@@ -30,7 +31,7 @@ final class RenamePersonHandlerTest extends AbstractPbjxTest
         $handler->handleCommand($command, $this->pbjx);
 
         $this->eventStore->pipeAllEvents(function (Event $event, StreamId $streamId) use ($expectedId) {
-            $this->assertInstanceOf(PersonRenamed::class, $event);
+            $this->assertInstanceOf(NodeRenamed::class, $event);
             $this->assertSame(StreamId::fromString("person.history:{$expectedId}")->toString(), $streamId->toString());
             $this->assertSame('updated-slug-name', $event->get('new_slug'));
             $this->assertSame('original-slug-name', $event->get('old_slug'));

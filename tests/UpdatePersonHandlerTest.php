@@ -7,10 +7,9 @@ use Acme\Schemas\Ovp\Node\VideoV1;
 use Acme\Schemas\People\Command\UpdatePersonV1;
 use Acme\Schemas\People\Event\PersonUpdatedV1;
 use Acme\Schemas\People\Node\PersonV1;
-use Gdbots\Schemas\Pbjx\Mixin\Event\Event;
 use Gdbots\Schemas\Ncr\NodeRef;
+use Gdbots\Schemas\Pbjx\Mixin\Event\Event;
 use Gdbots\Schemas\Pbjx\StreamId;
-use Triniti\People\Exception\InvalidArgumentException;
 use Triniti\People\UpdatePersonHandler;
 
 final class UpdatePersonHandlerTest extends AbstractPbjxTest
@@ -55,15 +54,16 @@ final class UpdatePersonHandlerTest extends AbstractPbjxTest
     }
 
     /**
-     * @expectedException InvalidArgumentException
+     * @expectedException \InvalidArgumentException
      */
     public function testHandleValidation(): void
     {
         $video = VideoV1::create();
-        $category = PersonV1::create();
+        $person = PersonV1::create();
 
         $command = UpdatePersonV1::create();
-        $command->set('old_node', $category);
+        $command->set('node_ref', NodeRef::fromNode($person));
+        $command->set('old_node', $person);
         $command->set('new_node', $video);
 
         $handler = new UpdatePersonHandler($this->ncr);

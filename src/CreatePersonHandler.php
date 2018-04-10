@@ -4,34 +4,16 @@ declare(strict_types=1);
 namespace Triniti\People;
 
 use Gdbots\Ncr\AbstractCreateNodeHandler;
+use Gdbots\Pbj\SchemaCurie;
 use Gdbots\Pbjx\Pbjx;
 use Gdbots\Schemas\Ncr\Enum\NodeStatus;
 use Gdbots\Schemas\Ncr\Mixin\CreateNode\CreateNode;
-use Gdbots\Schemas\Ncr\Mixin\Node\Node;
 use Gdbots\Schemas\Ncr\Mixin\NodeCreated\NodeCreated;
-use Triniti\Schemas\People\Mixin\CreatePerson\CreatePersonV1Mixin;
-use Triniti\Schemas\People\Mixin\Person\Person;
-use Triniti\Schemas\People\Mixin\PersonCreated\PersonCreatedV1Mixin;
+use Triniti\Schemas\People\Mixin\Person\PersonV1Mixin;
 
 class CreatePersonHandler extends AbstractCreateNodeHandler
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function isNodeSupported(Node $node): bool
-    {
-        return $node instanceof Person;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function createNodeCreated(CreateNode $command, Pbjx $pbjx): NodeCreated
-    {
-        /** @var NodeCreated $event */
-        $event = PersonCreatedV1Mixin::findOne()->createMessage();
-        return $event;
-    }
+    use PbjxHelperTrait;
 
     /**
      * {@inheritdoc}
@@ -48,8 +30,9 @@ class CreatePersonHandler extends AbstractCreateNodeHandler
      */
     public static function handlesCuries(): array
     {
+        $curie = PersonV1Mixin::findOne()->getCurie();
         return [
-            CreatePersonV1Mixin::findOne()->getCurie(),
+            SchemaCurie::fromString("{$curie->getVendor()}:{$curie->getPackage()}:command:create-person"),
         ];
     }
 }

@@ -4,31 +4,21 @@ declare(strict_types=1);
 namespace Triniti\People;
 
 use Gdbots\Ncr\AbstractGetNodeRequestHandler;
-use Gdbots\Pbjx\Pbjx;
-use Gdbots\Schemas\Ncr\Mixin\GetNodeRequest\GetNodeRequest;
-use Gdbots\Schemas\Ncr\Mixin\GetNodeResponse\GetNodeResponse;
-use Triniti\Schemas\People\Mixin\GetPersonRequest\GetPersonRequestV1Mixin;
-use Triniti\Schemas\People\Mixin\GetPersonResponse\GetPersonResponseV1Mixin;
+use Gdbots\Pbj\SchemaCurie;
+use Triniti\Schemas\People\Mixin\Person\PersonV1Mixin;
 
 class GetPersonRequestHandler extends AbstractGetNodeRequestHandler
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function createGetNodeResponse(GetNodeRequest $request, Pbjx $pbjx): GetNodeResponse
-    {
-        /** @var GetNodeResponse $response */
-        $response = GetPersonResponseV1Mixin::findOne()->createMessage();
-        return $response;
-    }
+    use PbjxHelperTrait;
 
     /**
      * {@inheritdoc}
      */
     public static function handlesCuries(): array
     {
+        $curie = PersonV1Mixin::findOne()->getCurie();
         return [
-            GetPersonRequestV1Mixin::findOne()->getCurie(),
+            SchemaCurie::fromString("{$curie->getVendor()}:{$curie->getPackage()}:request:get-person-request"),
         ];
     }
 }

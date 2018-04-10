@@ -136,14 +136,12 @@ final class NcrPersonProjectorTest extends AbstractPbjxTest
         $this->assertEquals('new-person-name', $renamedPerson->get('slug'));
     }
 
-    /**
-     * @expectedException \Gdbots\Ncr\Exception\NodeNotFound
-     */
     public function testOnPersonDeletedNodeRefNotExists(): void
     {
-        $event = PersonDeletedV1::create()
-            ->set('node_ref', NodeRef::fromString('acme:person:7afcc2f1-9654-46d1-8fc1-b0511df257db'));
+        $nodeRef = NodeRef::fromString('acme:person:7afcc2f1-9654-46d1-8fc1-b0511df257db');
+        $event = PersonDeletedV1::create()->set('node_ref', $nodeRef);
 
         $this->projector->onPersonDeleted($event, $this->pbjx);
+        $this->assertFalse($this->ncr->hasNode($nodeRef));
     }
 }

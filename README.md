@@ -22,4 +22,5 @@ services:
 
   Triniti\People\:
     resource: '%kernel.project_dir%/vendor/triniti/people/src/**/*'
+
 ```

@@ -4,41 +4,21 @@ declare(strict_types=1);
 namespace Triniti\People;
 
 use Gdbots\Ncr\AbstractRenameNodeHandler;
-use Gdbots\Pbjx\Pbjx;
-use Gdbots\Schemas\Ncr\Mixin\Node\Node;
-use Gdbots\Schemas\Ncr\Mixin\NodeRenamed\NodeRenamed;
-use Gdbots\Schemas\Ncr\Mixin\RenameNode\RenameNode;
-use Triniti\Schemas\People\Mixin\Person\Person;
-use Triniti\Schemas\People\Mixin\PersonRenamed\PersonRenamedV1Mixin;
-use Triniti\Schemas\People\Mixin\RenamePerson\RenamePersonV1Mixin;
+use Gdbots\Pbj\SchemaCurie;
+use Triniti\Schemas\People\Mixin\Person\PersonV1Mixin;
 
 class RenamePersonHandler extends AbstractRenameNodeHandler
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected function isNodeSupported(Node $node): bool
-    {
-        return $node instanceof Person;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function createNodeRenamed(RenameNode $command, Pbjx $pbjx): NodeRenamed
-    {
-        /** @var NodeRenamed $event */
-        $event = PersonRenamedV1Mixin::findOne()->createMessage();
-        return $event;
-    }
+    use PbjxHelperTrait;
 
     /**
      * {@inheritdoc}
      */
     public static function handlesCuries(): array
     {
+        $curie = PersonV1Mixin::findOne()->getCurie();
         return [
-            RenamePersonV1Mixin::findOne()->getCurie(),
+            SchemaCurie::fromString("{$curie->getVendor()}:{$curie->getPackage()}:command:rename-person"),
         ];
     }
 }
